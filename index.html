@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #f4f7fa; padding: 20px; font-family: 'Arial', sans-serif; }
+    .container { max-width: 1200px; }
+    .chart-container { height: 300px; }
+    .card-header, .modal-header { background-color: #007bff; color: white; }
+    .card-title, h1 { font-size: 1.5rem; }
+    .btn-custom { background-color: #007bff; color: white; border-radius: 5px; }
+    .form-control, .form-select { border-radius: 10px; }
+    .form-label { font-weight: 600; }
+    .modal-dialog { max-width: 600px; }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="login-page" class="d-flex align-items-center justify-content-center vh-100">
+    <div class="card p-4 shadow-sm" style="width: 400px;">
+      <h2 class="text-center mb-4">Login</h2>
+      <input id="username" type="text" class="form-control mb-3" placeholder="Username" required>
+      <input id="password" type="password" class="form-control mb-3" placeholder="Password" required>
+      <button id="login-btn" class="btn btn-custom w-100">Login</button>
+      <p id="login-error" class="text-danger text-center mt-3 d-none">Invalid credentials</p>
+    </div>
+  </div>
+
+  <!-- Invoice Management Page -->
+  <div id="invoice-page" class="container d-none">
+    <h1 class="mb-4 text-center">Invoice Management</h1>
+
+    <!-- Controls -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <button id="add-invoice-btn" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addInvoiceModal">Add New Invoice</button>
+      <div class="d-flex gap-2">
+        <select id="status-filter" class="form-select">
+          <option value="">Filter by Status</option>
+          <option value="Paid">Paid</option>
+          <option value="Pending">Pending</option>
+          <option value="Unpaid">Unpaid</option>
+        </select>
+        <select id="method-filter" class="form-select">
+          <option value="">Filter by Method</option>
+          <option value="Credit Card">Credit Card</option>
+          <option value="PayPal">PayPal</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Invoice Table -->
+    <div class="table-responsive mb-5">
+      <table class="table table-striped shadow-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Invoice ID</th>
+            <th>Status</th>
+            <th>Method</th>
+            <th>Amount</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="invoice-table">
+          <!-- Dynamic rows go here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm p-3">
+          <h5 class="card-title">Invoice Status Breakdown</h5>
+          <div class="chart-container">
+            <canvas id="pie-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm p-3">
+          <h5 class="card-title">Total Amount by Status</h5>
+          <div class="chart-container">
+            <canvas id="bar-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Invoice Modal -->
+  <div class="modal fade" id="addInvoiceModal" tabindex="-1" aria-labelledby="addInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addInvoiceModalLabel">Add New Invoice</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-invoice-form">
+            <div class="mb-3">
+              <label for="invoice-status" class="form-label">Status</label>
+              <select id="invoice-status" class="form-select" required>
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+                <option value="Unpaid">Unpaid</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="invoice-method" class="form-label">Method</label>
+              <select id="invoice-method" class="form-select" required>
+                <option value="Credit Card">Credit Card</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="invoice-amount" class="form-label">Amount</label>
+              <input type="number" id="invoice-amount" class="form-control" placeholder="Enter amount" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Add Invoice</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let invoices = JSON.parse(localStorage.getItem('invoices')) || [
+      { id: 'INV001', status: 'Paid', method: 'Credit Card', amount: 250 },
+      { id: 'INV002', status: 'Pending', method: 'PayPal', amount: 150 },
+      { id: 'INV003', status: 'Unpaid', method: 'Bank Transfer', amount: 350 },
+      { id: 'INV004', status: 'Paid', method: 'Credit Card', amount: 200 }
+    ];
+
+    const invoiceTable = document.getElementById('invoice-table');
+    const statusFilter = document.getElementById('status-filter');
+    const methodFilter = document.getElementById('method-filter');
+    let pieChart, barChart;
+    let editingInvoiceId = null;
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      if (username === 'admin' && password === 'password') {
+        document.getElementById('login-page').classList.add('d-none');
+        document.getElementById('invoice-page').classList.remove('d-none');
+        renderInvoices();
+        updateCharts();
+      } else {
+        document.getElementById('login-error').classList.remove('d-none');
+      }
+    });
+
+    function renderInvoices(data = invoices) {
+      invoiceTable.innerHTML = data.map(invoice => `
+        <tr>
+          <td>${invoice.id}</td>
+          <td>${invoice.status}</td>
+          <td>${invoice.method}</td>
+          <td>₹${invoice.amount}</td>
+          <td>
+            <button class="btn btn-warning btn-sm" onclick="editInvoice('${invoice.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="removeInvoice('${invoice.id}')">Remove</button>
+          </td>
+        </tr>
+      `).join('');
+      saveInvoicesToLocalStorage(); // Save invoices to localStorage after rendering
+    }
+
+    function editInvoice(id) {
+      const invoice = invoices.find(i => i.id === id);
+      document.getElementById('invoice-status').value = invoice.status;
+      document.getElementById('invoice-method').value = invoice.method;
+      document.getElementById('invoice-amount').value = invoice.amount;
+      editingInvoiceId = id;
+
+      const form = document.getElementById('add-invoice-form');
+      form.onsubmit = (e) => {
+        e.preventDefault();
+
+        invoice.status = document.getElementById('invoice-status').value;
+        invoice.method = document.getElementById('invoice-method').value;
+        invoice.amount = parseFloat(document.getElementById('invoice-amount').value);
+
+        renderInvoices();
+        updateCharts();
+        document.querySelector('#addInvoiceModal .btn-close').click();
+      };
+
+      const modal = new bootstrap.Modal(document.getElementById('addInvoiceModal'));
+      modal.show();
+    }
+
+    document.getElementById('add-invoice-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (editingInvoiceId) {
+        const invoice = invoices.find(i => i.id === editingInvoiceId);
+        invoice.status = document.getElementById('invoice-status').value;
+        invoice.method = document.getElementById('invoice-method').value;
+        invoice.amount = parseFloat(document.getElementById('invoice-amount').value);
+        editingInvoiceId = null;
+      } else {
+        const status = document.getElementById('invoice-status').value;
+        const method = document.getElementById('invoice-method').value;
+        const amount = parseFloat(document.getElementById('invoice-amount').value);
+        const newInvoice = { 
+          id: `INV00${invoices.length + 1}`, 
+          status, 
+          method, 
+          amount 
+        };
+        invoices.push(newInvoice);
+      }
+      renderInvoices();
+      updateCharts();
+      document.querySelector('#addInvoiceModal .btn-close').click();
+    });
+
+    function removeInvoice(id) {
+      invoices = invoices.filter(invoice => invoice.id !== id);
+      renderInvoices();
+      updateCharts();
+    }
+
+    function updateCharts(data = invoices) {
+      const statusCounts = {
+        Paid: data.filter(i => i.status === 'Paid').length,
+        Pending: data.filter(i => i.status === 'Pending').length,
+        Unpaid: data.filter(i => i.status === 'Unpaid').length,
+      };
+
+      const statusAmounts = {
+        Paid: data.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0),
+        Pending: data.filter(i => i.status === 'Pending').reduce((sum, i) => sum + i.amount, 0),
+        Unpaid: data.filter(i => i.status === 'Unpaid').reduce((sum, i) => sum + i.amount, 0),
+      };
+
+      if (statusFilter.value) {
+        data = data.filter(i => i.status === statusFilter.value);
+      }
+
+      if (methodFilter.value) {
+        data = data.filter(i => i.method === methodFilter.value);
+      }
+
+      renderInvoices(data);
+
+      if (pieChart) pieChart.destroy();
+      if (barChart) barChart.destroy();
+
+      pieChart = new Chart(document.getElementById('pie-chart'), {
+        type: 'pie',
+        data: {
+          labels: ['Paid', 'Pending', 'Unpaid'],
+          datasets: [{
+            data: Object.values(statusCounts),
+            backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+          }]
+        }
+      });
+
+      barChart = new Chart(document.getElementById('bar-chart'), {
+        type: 'bar',
+        data: {
+          labels: ['Paid', 'Pending', 'Unpaid'],
+          datasets: [{
+            label: 'Total Amount',
+            data: Object.values(statusAmounts),
+            backgroundColor: '#007bff'
+          }]
+        }
+      });
+    }
+
+    statusFilter.addEventListener('change', () => updateCharts());
+    methodFilter.addEventListener('change', () => updateCharts());
+
+    function saveInvoicesToLocalStorage() {
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+    }
+
+    window.onload = () => {
+      renderInvoices();
+      updateCharts();
+    };
+  </script>
+</body>
+</html>
