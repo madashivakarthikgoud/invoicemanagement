@@ -24,7 +24,7 @@
     <div class="card p-4 shadow-sm" style="width: 400px;">
       <h2 class="text-center mb-4">Login</h2>
       <input id="username" type="text" class="form-control mb-3" placeholder="Username" required>
-      <input id="password" type="password" class="form-control mb-3" placeholder="Password" required>
+      <input id="password" type="password" class="form-control mb-3" placeholder="password" required>
       <button id="login-btn" class="btn btn-custom w-100">Login</button>
       <p id="login-error" class="text-danger text-center mt-3 d-none">Invalid credentials</p>
     </div>
@@ -47,7 +47,7 @@
         <select id="method-filter" class="form-select">
           <option value="">Filter by Method</option>
           <option value="Credit Card">Credit Card</option>
-          <option value="PayPal">PayPal</option>
+          <option value="UPI">UPI</option>
           <option value="Bank Transfer">Bank Transfer</option>
         </select>
       </div>
@@ -114,7 +114,7 @@
               <label for="invoice-method" class="form-label">Method</label>
               <select id="invoice-method" class="form-select" required>
                 <option value="Credit Card">Credit Card</option>
-                <option value="PayPal">PayPal</option>
+                <option value="UPI">UPI</option>
                 <option value="Bank Transfer">Bank Transfer</option>
               </select>
             </div>
@@ -131,12 +131,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    let invoices = JSON.parse(localStorage.getItem('invoices')) || [
-      { id: 'INV001', status: 'Paid', method: 'Credit Card', amount: 250 },
-      { id: 'INV002', status: 'Pending', method: 'PayPal', amount: 150 },
-      { id: 'INV003', status: 'Unpaid', method: 'Bank Transfer', amount: 350 },
-      { id: 'INV004', status: 'Paid', method: 'Credit Card', amount: 200 }
-    ];
+    let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
 
     const invoiceTable = document.getElementById('invoice-table');
     const statusFilter = document.getElementById('status-filter');
