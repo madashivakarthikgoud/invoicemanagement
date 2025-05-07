@@ -9,7 +9,7 @@
 
 ## 🚀 Live Demo
 
-👉 [View the Application](https://yourusername.github.io/invoice-management-app/)
+👉 [View the Application](https://madashivakarthikgoud.github.io/invoicemanagement/)
 
 ---
 
